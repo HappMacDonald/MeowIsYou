@@ -1,0 +1,34 @@
+== status 2020-01-02T12:48-08:00
+* X Hooray, lots of dynamic rules is working now. :D
+* I need to get "undo" working somehow. Hmm.
+
+x Baba = Meow (cat)
+x Keke = Woof (dog)
+x Wall
+x Rock = Stone?
+x Water
+x Flag = Bullseye
+# Grass?
+x Empty = Blank
+x Heart
+# Text = Rule
+# Skull
+
+== Verbs:
+x is
+x you
+x win
+x push
+x stop
+x move
+x sink
+x pull
+x hot
+x melt
+x open
+shut
+
+
+cat tile (1,0) = 
+x repeat -> .5 + (3/16) - (1/256)
+y repeat -> .5 - (1/16) + (1/256)

@@ -1,0 +1,70 @@
+<html>
+<head>
+  <script src="maps.js"></script>
+  <script src="utility.js"></script>
+  <title>Meow is you</title>
+  <style>
+    html, body
+    { background: black
+    ; color: white
+    ; text-align: center
+    }
+    table#gameBoard
+    { border: 3px ridge grey
+    ; padding: 2px
+    ; border-style: ridge
+    ; margin: 0 auto
+    ; width: 768px
+    }
+/*
+    td.gameCell
+    { width:32px
+    ; height:32px
+    }
+*/
+  </style>
+</head>
+<body>
+  <h1>Meow is you</h1>
+  <h2>Level <span id='displayLevelNumber'>1</span></h2>
+  <table id='gameBoard' cellspacing="0"></table>
+</body>
+<script>
+  let tableGameBoard = document.getElementById("gameBoard");
+
+  let tr, td;
+  for(let cell=0; cell<GAME_BOARD_AREA; cell++)
+  { if(cell%GAME_BOARD_WIDTH == 0)
+    { tr = document.createElement("tr");
+      tableGameBoard.appendChild(tr);
+    }
+    td = document.createElement("td");
+    td.id = "cell"+ cell;
+    td.classList.add("gameCell");
+    td.style.backgroundImage = 'url(tiles.png)';
+    td.style.width = TILE_WIDTH +"px";
+    td.style.height = TILE_HEIGHT +"px";
+    td.style.backgroundPosition = '1 0';
+    tr.appendChild(td);
+  }
+
+  window.currentLevel = [];
+  for(let i = 0; i<TOTAL_TILES; i++)
+  { window.currentLevel[i] = [];
+  }
+
+  for(let cell=0; cell<GAME_BOARD_AREA; cell++)
+  { let tile = window.symbolToData[window.levels[0].substr(cell,1)];
+    if(tile<1)
+    { continue; // don't need to record empties. DrawBoard will calculate those for us.
+    }
+    window.currentLevel[tile].push(cell);
+  }
+  DrawBoard();
+
+  document.addEventListener
+  ( 'keydown'
+  , HandleKeypress
+  );
+</script>
+</html>
