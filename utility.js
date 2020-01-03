@@ -10,7 +10,10 @@ td.style.backgroundPosition =
 }
 
 function DrawBoard()
-{ window.currentLevel[0] = []; // erase empty tile stack, will recalculate here.
+{ document.getElementById('displayLevelNumber').innerHTML =
+    window.currentLevelNumber;
+  
+  window.currentLevel[TILE_BLANK] = []; // erase empty tile stack, will recalculate here.
   
   for(let cell=0; cell<GAME_BOARD_AREA; cell++)
   { let tile = 0; // assume blank until proven otherwise
@@ -23,7 +26,7 @@ function DrawBoard()
       }
     }
     if(tile==0)
-    { window.currentLevel[0].push(cell); // rebuilding "empty" stack
+    { window.currentLevel[TILE_BLANK].push(cell); // rebuilding "empty" stack
     }
     SetTile(cell, tile);
   }
@@ -34,6 +37,7 @@ function calculateRules()
 {
   window.rules =
   { isYou : []
+  , isWin : []
   , isStop : [16] // Hardcode Brick is stop
   , isPush :
     [ 8, 9, 10, 11, 12, 13, 14, 15 // All text pt 1
@@ -48,9 +52,39 @@ function calculateRules()
     PerformIsA(isCell-1, isCell+1);
     PerformIsA(isCell-GAME_BOARD_WIDTH, isCell+GAME_BOARD_WIDTH);
   }
+
+  //setTimeout as a cheap way to try to get at least an animation frame in
+  // before alert dialog freeze screen pre-win state :P
+  setTimeout
+  ( () =>
+    { if(CheckWin())
+      { alert("Uwin :D");
+        StartLevel( (window.currentLevelNumber + 1) % window.levels.length );
+      }
+    }
+  , 0
+  );
 }
 
-function cellPeek(cell)
+function CheckWin()
+{ let you = new Set();
+  for(let i in window.rules.isYou)
+  { let tileType = window.rules.isYou[i];
+    window.currentLevel[tileType].forEach(youCell => { you.add(youCell);});
+  }
+  for(let i in window.rules.isWin)
+  { let tileType = window.rules.isWin[i];
+    for(let j in window.currentLevel[tileType])
+    { let cell = window.currentLevel[tileType][j]
+      if(you.has(cell))
+      { return true;
+      }
+    }
+  }
+  return false;
+}
+
+function CellPeek(cell)
 { let ret = [];
   for(let tileType in window.currentLevel)
   { if(window.currentLevel[tileType].includes(cell))
@@ -61,8 +95,8 @@ function cellPeek(cell)
 }
 
 function PerformIsA(nounTextCell, adjectiveCell)
-{ let nounTexts = cellPeek(nounTextCell);
-  let adjectives = cellPeek(adjectiveCell);
+{ let nounTexts = CellPeek(nounTextCell);
+  let adjectives = CellPeek(adjectiveCell);
   for(let nounTextIndex in nounTexts)
   { for(let adjectiveIndex in adjectives)
     { let nounText = nounTexts[nounTextIndex];
@@ -78,38 +112,63 @@ function PerformIsB(nouns, adjective)
 { if(adjective == TILE_TEXT_YOU)
   { window.rules.isYou =
       window.rules.isYou.concat(nouns);
-console.log(`PerformIsB`);
-console.log(nouns);
-console.log(window.rules.isYou);
     return;
   }
   if(adjective == TILE_TEXT_STOP)
   { window.rules.isStop =
       window.rules.isStop.concat(nouns);
     return;
-  }  
+  }
   if(adjective == TILE_TEXT_PUSH)
   { window.rules.isPush =
       window.rules.isPush.concat(nouns);
     return;
   }  
+  if(adjective == TILE_TEXT_WIN)
+  { window.rules.isWin =
+      window.rules.isWin.concat(nouns);
+    return;
+  }  
 }
 
 function HandleKeypress(event)
-{ let offset = window.keyToOffset[event.key];
+{ // assume we're not handling the keypress until it's proven that we are.
+  window.allowKeypress = true;
+
+  let offset = window.keyToOffset[event.key];
+  if(event.key.toLowerCase() == 'a' && window.gameHistory.length>1)
+  { // Undo
+    window.gameHistory.pop(); // discard previous "currentLevel" on end of stack
+    window.currentLevel = window.gameHistory[window.gameHistory.length-1];
+    window.allowKeypress = false; // we did handle the keypress
+  }
+  else if(offset != null)
+  { 
 // console.log(offset);
-  if(offset==null)
-  { return;
+    if(offset==null)
+    { return;
+    }
+    window.frameBufferChanged = false;
+    window.frameBuffer = [...window.currentLevel];
+    window.gameHistory.push(window.frameBuffer);
+    for(let i in window.rules.isYou)
+    { let tileType = window.rules.isYou[i];
+// console.log(`${tileType} : ${window.currentLevel[tileType]}`)
+      window.frameBuffer[tileType] =
+        window.currentLevel[tileType].map(MoveYouCell(offset))
+    }
+    if(window.frameBufferChanged)
+    { window.currentLevel = window.frameBuffer;
+    }
+    else
+    { window.frameBuffer = window.currentLevel;
+      window.gameHistory.pop();
+    }
+      window.allowKeypress = false; // we did handle the keypress
+
   }
-  window.frameBuffer = [...window.currentLevel];
-  for(let i in window.rules.isYou)
-  { let tileType = window.rules.isYou[i]
-console.log(`${tileType} : ${window.currentLevel[tileType]}`)
-    window.frameBuffer[tileType] =
-    window.currentLevel[tileType].map(MoveYouCell(offset))
-  }
-  window.currentLevel = [...window.frameBuffer];
   DrawBoard();
+  return window.allowKeypress; // return whether or not we handled the keypress
 }
 
 // partially apply "offset" as first argument to MoveCell.
@@ -132,7 +191,7 @@ function MoveCell(offset, cell)
         )
       );
   }
-// console.log(`Pre-stop-check, cell=${cell} + offset=${offset} ≅ newCell=${newCell}`);
+// console.log(`Pre-stop-check, cell==${cell} + offset=${offset} ≅ newCell==${newCell}`);
   for(let i in window.rules.isStop)
   { let tileType = window.rules.isStop[i];
     if(window.currentLevel[tileType].includes(newCell))
@@ -150,8 +209,9 @@ function MoveCell(offset, cell)
     { let newNewCell = MoveCell(offset, newCell);
       if(newNewCell != newCell)
       { window.frameBuffer[tileType] =
-          window.frameBuffer[tileType].filter( cell => { return cell != newCell; } );
+          window.frameBuffer[tileType].filter( cellPushable => { return cellPushable != newCell; } );
         window.frameBuffer[tileType].push(newNewCell);
+        window.frameBufferChanged = true;
       }
       else
       { 
@@ -163,6 +223,26 @@ function MoveCell(offset, cell)
 // console.log(`Post-stop-check, cell=${cell} + offset=${offset} ≅ newCell=${newCell}`);
 
 // console.log(`${cell} goes to ${newCell}!`);
+  if(newCell != cell)
+  { window.frameBufferChanged = true;
+  }
   return( newCell );
 }
 
+function StartLevel(level)
+{ window.currentLevelNumber = level;
+  window.gameHistory = [[]];
+  window.currentLevel = window.gameHistory[0];
+  for(let i = 0; i<TOTAL_TILES; i++)
+  { window.currentLevel[i] = [];
+  }
+
+  for(let cell=0; cell<GAME_BOARD_AREA; cell++)
+  { let tile = window.symbolToData[window.levels[level].substr(cell,1)];
+    if(tile<1)
+    { continue; // don't need to record empties. DrawBoard will calculate those for us.
+    }
+    window.currentLevel[tile].push(cell);
+  }
+  DrawBoard();
+}

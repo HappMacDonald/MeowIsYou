@@ -48,23 +48,13 @@
     tr.appendChild(td);
   }
 
-  window.currentLevel = [];
-  for(let i = 0; i<TOTAL_TILES; i++)
-  { window.currentLevel[i] = [];
-  }
+  StartLevel(0);
 
-  for(let cell=0; cell<GAME_BOARD_AREA; cell++)
-  { let tile = window.symbolToData[window.levels[0].substr(cell,1)];
-    if(tile<1)
-    { continue; // don't need to record empties. DrawBoard will calculate those for us.
-    }
-    window.currentLevel[tile].push(cell);
-  }
-  DrawBoard();
-
+  window.allowKeypress = true; // can veto shortcut keys across events
   document.addEventListener
   ( 'keydown'
   , HandleKeypress
   );
+
 </script>
 </html>

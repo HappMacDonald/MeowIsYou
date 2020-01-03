@@ -148,7 +148,7 @@ window.levels =
   + "B                      B"
   + "B m           t        B"
   + "B i                    B"
-  + "B y        w           B"
+  + "B y        !           B"
   + "B                      B"
   + "B                 i    B"
   + "B                      B"
